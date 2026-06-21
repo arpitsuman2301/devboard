@@ -1,28 +1,36 @@
-# Goal: To deploy the built images from CI Steps once the CI Worklow is Succeeded
+# Goal - To deploy the built images from CI steps one the CI workflow is succeded
 
 name: CD
 
-on: 
-    workflow_call:
+on:
+  workflow-run:
+    workflows: ['CI']
+    types: [completed]
+    branches:
+      - 'advanced'
 
 jobs:
-    deploy:
-        
-        runs-on: self-hosted
-        steps:
-            - name: Code Checkout
-              uses: actions/checkout@v7
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: code checkout
+        uses: actions/checkout@v7
 
-            - name: Copy Example Env to main env
-              run: cp .env.example .env
+      - name: copy example.env to main .env
+        run: cp .env.example .env
 
-            - name: Docker Setup [Login]
-              uses: docker/login-action@v4
-              with:
-                username: ${{ vars.DOCKERHUB_USERNAME }}
-                password: ${{ secrets.DOCKERHUB_TOKEN }}
+      # install docker and docker compose on the self hosted reunner manually befor  doing loggin below
+      # sudo apt-get update && sudo apt-get install docker.io docker-compose-v2 -y
+      # sudo usermod -aG docker $USER
+      # newgrp docker
 
-            - name: Deploy the containers with Docker Compose
-              run: |
-                docker compose pull
-                docker compose up -d
+      - name: docker setup (login)
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: deploy the containers with docker compose
+        run: |
+          docker compose pull
+          docker compose up -d
